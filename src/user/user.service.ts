@@ -22,6 +22,9 @@ export class UserService {
           email: createUserDto.email,
           password: hashedPassword,
           role: createUserDto.role,
+          specialization: createUserDto.specialization,
+          license: createUserDto.license,
+          age: createUserDto.age,
         },
       });
       return user;

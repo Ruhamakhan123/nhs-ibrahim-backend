@@ -14,4 +14,16 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   role: string;
+
+  @IsOptional()
+  @IsString()
+  specialization: string;
+
+  @IsOptional()
+  @IsString()
+  license: string;
+
+  @IsOptional()
+  @IsString()
+  age: string;
 }

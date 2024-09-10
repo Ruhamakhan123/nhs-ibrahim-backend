@@ -39,14 +39,14 @@ export class UserController {
   }
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin, Role.Doctor, Role.Nurse, Role.Pharmacist, Role.FrontDesk)
+  @Roles(Role.Admin)
   async findAllUsers(): Promise<UserModel[]> {
     return this.userService.findAll();
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin, Role.Doctor, Role.Nurse, Role.Pharmacist, Role.FrontDesk)
+  @Roles(Role.Admin)
   async findOneUser(@Param('id') id: string): Promise<UserModel> {
     return this.userService.findOne(id);
   }
