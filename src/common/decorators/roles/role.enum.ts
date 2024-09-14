@@ -3,5 +3,5 @@ export enum Role {
   Doctor = 'doctor',
   Nurse = 'nurse',
   Pharmacist = 'pharmacist',
-  FrontDesk = 'frontDesk',
+  FrontDesk = 'frontdesk',
 }

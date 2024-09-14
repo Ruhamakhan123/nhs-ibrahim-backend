@@ -84,6 +84,8 @@ export class FrontDeskController {
   async getVisits(): Promise<GetVisitsResponseDto> {
     return this.frontDeskService.getVisits();
   }
+
+
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.FrontDesk)

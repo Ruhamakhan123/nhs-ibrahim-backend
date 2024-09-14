@@ -30,13 +30,13 @@ export class CreatePatientDto {
   @IsEmail()
   email: string;
 
-  @IsOptional()
-  @IsString()
-  cnic?: string;
-
   @IsNotEmpty()
   @IsEnum(Identity)
   identity: Identity;
+  
+  @IsOptional()
+  @IsString()
+  cnic?: string;
 
   @IsNotEmpty()
   @IsEnum(CRC)

@@ -21,9 +21,14 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
-  license: string;
+  qualification: string;
 
   @IsOptional()
   @IsString()
   age: string;
+
+  @IsOptional()
+  @IsString()
+  license: string;
+
 }
