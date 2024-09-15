@@ -7,11 +7,11 @@ import {
   ValidateNested,
   IsArray,
   IsNotEmpty,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { RelationDto } from './relation.dto';
-import { VisitDto } from './visit.dto';
-import { Identity, CRC, CatchmentArea } from '@prisma/client';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { RelationDto } from "./relation.dto";
+import { VisitDto } from "./visit.dto";
+import { Identity, CRC, CatchmentArea } from "@prisma/client";
 
 export class UpdatePatientDto {
   @IsOptional()
@@ -75,10 +75,6 @@ export class UpdatePatientDto {
   catchmentArea?: CatchmentArea;
 
   @IsOptional()
-  @IsInt()
-  tokenNumber?: number;
-
-  @IsOptional()
   @IsString()
   amountPayed?: string;
 
@@ -86,11 +82,5 @@ export class UpdatePatientDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RelationDto)
-  relations?: RelationDto[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => VisitDto)
-  visits?: VisitDto[];
+  relation?: RelationDto[];
 }
