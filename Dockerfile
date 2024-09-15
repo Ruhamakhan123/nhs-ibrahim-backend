@@ -17,9 +17,6 @@ RUN npx prisma generate
 # Copy the rest of the application code to the container
 COPY . .
 
-# Copy the .env file
-COPY .env .env
-
 # Expose the application port
 EXPOSE 3000
 
