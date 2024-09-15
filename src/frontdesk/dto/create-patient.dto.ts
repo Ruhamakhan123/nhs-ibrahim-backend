@@ -33,7 +33,7 @@ export class CreatePatientDto {
   @IsNotEmpty()
   @IsEnum(Identity)
   identity: Identity;
-  
+
   @IsOptional()
   @IsString()
   cnic?: string;
@@ -74,9 +74,6 @@ export class CreatePatientDto {
   @IsEnum(CatchmentArea)
   catchmentArea: CatchmentArea;
 
-  @IsInt()
-  tokenNumber: number;
-
   @IsNotEmpty()
   @IsString()
   amountPayed: string;
@@ -86,9 +83,9 @@ export class CreatePatientDto {
   @ValidateNested({ each: true })
   @Type(() => RelationDto)
   relation: RelationDto[];
-
+  @IsOptional() // Allow Visit to be optional
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VisitDto)
-  Visit: VisitDto[];
+  Visit?: VisitDto[];
 }

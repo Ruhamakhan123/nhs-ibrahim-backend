@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
 import { Relationship } from '@prisma/client';
 
 export class RelationDto {
@@ -6,11 +6,11 @@ export class RelationDto {
   @IsEnum(Relationship)
   relation: Relationship;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  relationName: string;
+  relationName?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  relationCNIC: string;
+  relationCNIC?: string;
 }

@@ -82,6 +82,7 @@ enum Relationship {
   PARENT
   SIBLING
   CHILD
+  NONE 
 }
 
 enum Identity {

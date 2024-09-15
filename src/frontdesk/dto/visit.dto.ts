@@ -1,13 +1,16 @@
 // src/frontdesk/dto/visit.dto.ts
 
-import { IsInt, IsDate } from 'class-validator';
+import { IsInt, IsDate, IsNotEmpty, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class VisitDto {
-  @Type(() => Date)
-  @IsDate()
-  date: Date;
-
-  @IsInt()
+  @IsOptional()
+  @IsNotEmpty()
+  @IsInt() // Ensure tokenNumber is an integer
   tokenNumber: number;
+
+  @IsNotEmpty()
+  @Type(() => Date)
+  @IsDate() // Ensure date is a valid Date instance
+  date: Date;
 }
