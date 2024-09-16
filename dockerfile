@@ -20,8 +20,8 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose the application port (informational)
+# Expose the application port
 EXPOSE 3000
 
-# Start the NestJS application using a command that considers environment variables
-CMD ["node", "dist/main"]
+# Start the NestJS application
+CMD ["npm", "run", "start:prod"]
