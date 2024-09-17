@@ -79,6 +79,11 @@ export class FrontDeskService {
       // Add token and Visit to patient data
       patientData.tokenNumber = setting.lastToken;
       patientData.Visit = {
+
+
+
+
+
         create: Visit.map((visit) => ({
           ...visit,
           tokenNumber: setting.lastToken, // Include token number in the visit
