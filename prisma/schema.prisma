@@ -9,7 +9,6 @@ generator client {
   binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
-
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
@@ -50,9 +49,15 @@ model Patient {
   address            String
   catchmentArea      CatchmentArea
   Visit              Visit[]
-  tokenNumber        Int
+  tokenNumber        Int?
   amountPayed        String
-  relation           Relation[]
+  weight             Int?
+  sugarLevel         Int?
+  temperature        Int?
+  height             Int?
+  bloodPressure      String?
+
+  relation Relation[]
 
   attendedByDoctor User @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
 }
@@ -66,9 +71,9 @@ model GlobalSetting {
 model Relation {
   id           String       @id @default(auto()) @map("_id") @db.ObjectId
   patientId    String       @db.ObjectId
-  relation     Relationship
-  relationName String
-  relationCNIC String
+  relation     Relationship @default(NONE)
+  relationName String?
+  relationCNIC String?
   patient      Patient      @relation(fields: [patientId], references: [id])
 }
 
@@ -77,14 +82,14 @@ model Visit {
   patientId   String   @db.ObjectId
   date        DateTime @default(now())
   tokenNumber Int
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  patient     Patient? @relation(fields: [patientId], references: [id])
 }
 
 enum Relationship {
   PARENT
   SIBLING
   CHILD
-  NONE 
+  NONE
 }
 
 enum Identity {

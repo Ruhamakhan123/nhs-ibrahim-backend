@@ -37,10 +37,11 @@ export class FrontDeskController {
 
   @Get("patients")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.FrontDesk)
+  @Roles(Role.FrontDesk, Role.Nurse)
   async searchPatients(
     @Query() input: SearchRequestDto
   ): Promise<{ success: boolean; error?: string; data: any[] }> {
+    
     return this.frontDeskService.searchPatients(input);
   }
 

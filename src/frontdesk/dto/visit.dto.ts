@@ -5,7 +5,6 @@ import { Type } from 'class-transformer';
 
 export class VisitDto {
   @IsOptional()
-  @IsNotEmpty()
   @IsInt() // Ensure tokenNumber is an integer
   tokenNumber: number;
 

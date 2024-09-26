@@ -20,14 +20,8 @@ export class FrontDeskService {
   async addPatient(createPatientDto: CreatePatientDto): Promise<Patient> {
     const { attendedByDoctorId, cnic, relation, Visit } = createPatientDto;
 
-    // Check if Doctor ID is provided
-    if (!attendedByDoctorId) {
-      throw new BadRequestException(
-        "Doctor ID is required to create a patient."
-      );
-    }
 
-    // CNIC validation
+
     if (cnic) {
       const existingPatient = await this.prisma.patient.findFirst({
         where: { cnic },
@@ -40,14 +34,14 @@ export class FrontDeskService {
       }
     }
 
-    // Prepare patient data object
+
     const patientData: any = {
       ...createPatientDto,
       attendedByDoctorId,
     };
 
     // Conditionally generate a token and add Visit only if `Visit` is passed
-    if (Visit && Visit.length > 0) {
+    if (Visit && Array.isArray(Visit) && Visit.length > 0) {
       // Token generation logic
       const today = new Date().setHours(0, 0, 0, 0);
       let setting = await this.prisma.globalSetting.findFirst();
@@ -79,11 +73,6 @@ export class FrontDeskService {
       // Add token and Visit to patient data
       patientData.tokenNumber = setting.lastToken;
       patientData.Visit = {
-
-
-
-
-
         create: Visit.map((visit) => ({
           ...visit,
           tokenNumber: setting.lastToken, // Include token number in the visit
@@ -124,12 +113,11 @@ export class FrontDeskService {
         data: patientData,
       });
 
-      console.log("Relation Data:", relation);
       return patient;
     } catch (error) {
       console.error("Error creating patient:", error); // Log the full error for debugging
       throw new BadRequestException(
-        "Error creating patient. Please check the data and try again."
+        error
       );
     }
   }
@@ -284,24 +272,63 @@ export class FrontDeskService {
   async addVisit(
     input: AddVisitRequestDto
   ): Promise<{ success: boolean; error?: string }> {
-    const { patientId } = input;
+    const { patientId, Visit } = input;
 
     try {
-      // Find the patient by ID and retrieve their token number
       const patient = await this.prisma.patient.findUnique({
         where: { id: patientId },
-        select: { tokenNumber: true },
       });
 
       if (!patient) {
         throw new NotFoundException("Patient not found.");
       }
 
-      // Create a visit for the patient
+      let tokenNumber = patient.tokenNumber;
+
+      if (!tokenNumber) {
+        // Token generation logic
+        const today = new Date().setHours(0, 0, 0, 0);
+        let setting = await this.prisma.globalSetting.findFirst();
+
+        if (!setting || setting.lastTokenDate.setHours(0, 0, 0, 0) < today) {
+          if (!setting) {
+            setting = await this.prisma.globalSetting.create({
+              data: {
+                lastToken: 1,
+                lastTokenDate: new Date(),
+              },
+            });
+          } else {
+            setting = await this.prisma.globalSetting.update({
+              where: { id: setting.id },
+              data: {
+                lastToken: 1,
+                lastTokenDate: new Date(),
+              },
+            });
+          }
+        } else {
+          setting = await this.prisma.globalSetting.update({
+            where: { id: setting.id },
+            data: { lastToken: setting.lastToken + 1 },
+          });
+        }
+
+        tokenNumber = setting.lastToken;
+
+        // Update patient with new token number
+        await this.prisma.patient.update({
+          where: { id: patientId },
+          data: { tokenNumber },
+        });
+      }
+
+      // Create new visit
       await this.prisma.visit.create({
         data: {
-          patientId: patientId,
-          tokenNumber: patient.tokenNumber,
+          patient: { connect: { id: patientId } },
+          tokenNumber,
+          // Add any other fields from the Visit input if needed
         },
       });
 
@@ -309,14 +336,11 @@ export class FrontDeskService {
     } catch (error) {
       console.error("Error adding visit:", error);
 
-      // Return error details
       if (error instanceof NotFoundException) {
         throw error;
       }
 
-      throw new BadRequestException(
-        "An error occurred while adding the visit."
-      );
+      throw new BadRequestException(error);
     }
   }
 
@@ -412,44 +436,26 @@ export class FrontDeskService {
   }
 
   async updatePatient(id: string, updatePatientDto: UpdatePatientDto) {
-    console.log('Received update data:', updatePatientDto); // Add this to log incoming data
+    console.log("Received update data:", updatePatientDto); // Add this to log incoming data
 
-    const { attendedByDoctorId, cnic, relation, ...rest } = updatePatientDto;
-  
-    if (!attendedByDoctorId) {
-      throw new BadRequestException("Doctor ID is required to create a patient.");
-    }
-  
-    // CNIC validation: Ensure no other patient exists with the same CNIC
-    if (cnic) {
-      const existingPatient = await this.prisma.patient.findFirst({
-        where: { cnic },
-      });
-  
-      if (existingPatient && existingPatient.id !== id) {
-        throw new BadRequestException("A patient with the same CNIC already exists.");
-      }
-    }
-  
-    // Create an object to hold the update data
+    const { relation, ...rest } = updatePatientDto;
+
+
+
     const updateData: any = {
-      ...rest, // Spread all non-relational fields
+      ...rest, 
     };
-  
-    // Handle the attendedByDoctorId (relational field)
-    if (attendedByDoctorId) {
-      updateData.attendedByDoctor = {
-        connect: { id: attendedByDoctorId }, // Use connect to link the doctor
-      };
-    }
-  
-    // Handle relations (create new relations if they are provided)
-    if (relation && relation.length > 0 && relation[0].relation !== Relationship.NONE) {
+
+    if (
+      relation &&
+      relation.length > 0 &&
+      relation[0].relation !== Relationship.NONE
+    ) {
       const firstRelation = relation[0];
       if (!firstRelation.relationName || !firstRelation.relationCNIC) {
         throw new BadRequestException("Relation information is incomplete.");
       }
-  
+
       updateData.relation = {
         create: relation.map((r) => ({
           relation: r.relation,
@@ -457,20 +463,23 @@ export class FrontDeskService {
           relationCNIC: r.relationCNIC,
         })),
       };
+    } else {
+      delete updateData.relation;
     }
-  
+
     try {
       const updatedPatient = await this.prisma.patient.update({
         where: { id },
-        data: updateData,
-        include: { relation: true }, // Include relations in the response
+        data: updateData
+        // include: { relation: true }, // Include relations in the response
       });
       return updatedPatient;
     } catch (error) {
-      throw new NotFoundException("Patient not found or the update is not applicable.");
+      throw new NotFoundException(
+        "Patient not found or the update is not applicable."
+      );
     }
   }
-  
 }
 // doctor id 66a3f7e0a3fae9634a429717
 // patient id 66df51673e73bb31afb0316b

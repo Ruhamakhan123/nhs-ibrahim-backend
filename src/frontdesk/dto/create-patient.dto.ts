@@ -7,12 +7,12 @@ import {
   IsEnum,
   ValidateNested,
   IsArray,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { Identity, CRC, CatchmentArea } from '@prisma/client';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { Identity, CRC, CatchmentArea } from "@prisma/client";
 
-import { RelationDto } from './relation.dto';
-import { VisitDto } from './visit.dto';
+import { RelationDto } from "./relation.dto";
+import { VisitDto } from "./visit.dto";
 
 export class CreatePatientDto {
   @IsNotEmpty()
@@ -83,9 +83,7 @@ export class CreatePatientDto {
   @ValidateNested({ each: true })
   @Type(() => RelationDto)
   relation: RelationDto[];
+
   @IsOptional() // Allow Visit to be optional
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => VisitDto)
   Visit?: VisitDto[];
 }

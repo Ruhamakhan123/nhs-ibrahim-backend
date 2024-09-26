@@ -14,73 +14,75 @@ import { VisitDto } from "./visit.dto";
 import { Identity, CRC, CatchmentArea } from "@prisma/client";
 
 export class UpdatePatientDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  attendedByDoctorId?: string;
+  attendedByDoctorId: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  name?: string;
+  name: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  fatherName?: string;
+  fatherName: string;
 
-  @IsOptional()
   @IsEmail()
-  email?: string;
+  email: string;
+
+  @IsNotEmpty()
+  @IsEnum(Identity)
+  identity: Identity;
 
   @IsOptional()
   @IsString()
   cnic?: string;
 
-  @IsOptional()
-  @IsEnum(Identity)
-  identity?: Identity;
-
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(CRC)
-  crc?: CRC;
+  crc: CRC;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  crcNumber?: string;
+  crcNumber: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  contactNumber?: string;
+  contactNumber: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  education?: string;
+  education: string;
 
-  @IsOptional()
+
+  @IsNotEmpty()
   @IsString()
-  age?: string;
+  age: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  marriageYears?: string;
+  marriageYears: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  occupation?: string;
+  occupation: string;
 
-  @IsOptional()
+
+  @IsNotEmpty()
   @IsString()
-  address?: string;
+  address: string;
 
-  @IsOptional()
+
+  @IsNotEmpty()
   @IsEnum(CatchmentArea)
-  catchmentArea?: CatchmentArea;
+  catchmentArea: CatchmentArea;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  amountPayed?: string;
+  amountPayed: string;
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RelationDto)
-  relation?: RelationDto[];
+  relation: RelationDto[];
 }
