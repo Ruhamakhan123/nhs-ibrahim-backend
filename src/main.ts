@@ -6,9 +6,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: "https://ibrahim-medical-virid.vercel.app/", // Ensure this is updated or removed based on your production environment needs
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
     credentials: true,
   });
+  
 
   app.useGlobalPipes(
     new ValidationPipe({
