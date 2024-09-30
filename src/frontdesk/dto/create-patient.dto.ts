@@ -3,16 +3,16 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsInt,
   IsEnum,
   ValidateNested,
   IsArray,
-} from "class-validator";
-import { Type } from "class-transformer";
-import { Identity, CRC, CatchmentArea } from "@prisma/client";
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { Identity, CRC, CatchmentArea } from '@prisma/client';
 
-import { RelationDto } from "./relation.dto";
-import { VisitDto } from "./visit.dto";
+import { RelationDto } from './relation.dto';
+import { VisitDto } from './visit.dto';
+import { PatientDetailsDto } from '../../nurse/dto/patient-details.dto'; // Import the new DTO
 
 export class CreatePatientDto {
   @IsNotEmpty()
@@ -86,4 +86,9 @@ export class CreatePatientDto {
 
   @IsOptional() // Allow Visit to be optional
   Visit?: VisitDto[];
+
+  @IsOptional()
+  @ValidateNested() // Validate nested PatientDetailsDto
+  @Type(() => PatientDetailsDto)
+  details?: PatientDetailsDto; // Reference to the new PatientDetailsDto
 }

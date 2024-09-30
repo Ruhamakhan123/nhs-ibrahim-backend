@@ -51,16 +51,27 @@ model Patient {
   Visit              Visit[]
   tokenNumber        Int?
   amountPayed        String
-  weight             Int?
-  sugarLevel         Int?
-  temperature        Int?
-  height             Int?
-  bloodPressure      String?
+  relation           Relation[]
 
-  relation Relation[]
+  // Optional relation to PatientDetails
+  details            PatientDetails? @relation("PatientDetailsRelation")
 
-  attendedByDoctor User @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
+  attendedByDoctor   User            @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
 }
+
+model PatientDetails {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId     String   @unique @db.ObjectId // Unique to maintain a one-to-one relationship
+  weight         Float?
+  sugarLevel     Float?
+  temperature    Float?
+  height         Float?
+  bloodPressure   String?
+
+  // Relation to Patient with fields and references
+  patient       Patient  @relation("PatientDetailsRelation", fields: [patientId], references: [id])
+}
+
 
 model GlobalSetting {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId

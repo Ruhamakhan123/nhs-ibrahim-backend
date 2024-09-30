@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { FrontDeskModule } from './frontdesk/frontdesk.module';
+import { NurseModule } from './nurse/nurse.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { FrontDeskModule } from './frontdesk/frontdesk.module';
     AuthModule,
     UserModule,
     FrontDeskModule,
+    NurseModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

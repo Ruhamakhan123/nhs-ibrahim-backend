@@ -2,26 +2,32 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { CreatePatientDto } from "./dto/create-patient.dto";
-import { Patient } from "@prisma/client";
-import { DoctorDTO } from "./dto/doctor.dto";
-import { SearchRequestDto } from "./dto/search.dto";
-import { AddVisitRequestDto } from "./dto/add-visit.dto";
-import { GetVisitsResponseDto, VisitDto } from "./dto/visit-response.dto";
-import { GetPatientResponseDto } from "./dto/get-patient.dto";
-import { UpdatePatientDto } from "./dto/update-patient.dto";
-import { Relationship } from "@prisma/client";
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreatePatientDto } from './dto/create-patient.dto';
+import { Patient } from '@prisma/client';
+import { DoctorDTO } from './dto/doctor.dto';
+import { SearchRequestDto } from './dto/search.dto';
+import { AddVisitRequestDto } from './dto/add-visit.dto';
+import { GetVisitsResponseDto, VisitDto } from './dto/visit-response.dto';
+import { GetPatientResponseDto } from './dto/get-patient.dto';
+import { UpdatePatientDto } from './dto/update-patient.dto';
+import { Relationship } from '@prisma/client';
+import { identity } from 'rxjs';
 @Injectable()
 export class FrontDeskService {
   constructor(private prisma: PrismaService) {}
 
   async addPatient(createPatientDto: CreatePatientDto): Promise<Patient> {
-    const { attendedByDoctorId, cnic, relation, Visit } = createPatientDto;
+    const {
+      attendedByDoctorId,
+      cnic,
+      relation,
+      Visit,
+      details, // Add details to destructured DTO
+    } = createPatientDto;
 
-
-
+    // Check for existing patient with the same CNIC
     if (cnic) {
       const existingPatient = await this.prisma.patient.findFirst({
         where: { cnic },
@@ -29,48 +35,44 @@ export class FrontDeskService {
 
       if (existingPatient) {
         throw new BadRequestException(
-          "A patient with the same CNIC already exists."
+          'A patient with the same CNIC already exists.',
         );
       }
     }
 
-
+    // Prepare patient data
     const patientData: any = {
       ...createPatientDto,
       attendedByDoctorId,
     };
 
-    // Conditionally generate a token and add Visit only if `Visit` is passed
+    // Handle Visit and token generation if Visits are provided
     if (Visit && Array.isArray(Visit) && Visit.length > 0) {
-      // Token generation logic
       const today = new Date().setHours(0, 0, 0, 0);
       let setting = await this.prisma.globalSetting.findFirst();
 
+      // Check if token needs to be reset
       if (!setting || setting.lastTokenDate.setHours(0, 0, 0, 0) < today) {
-        if (!setting) {
-          setting = await this.prisma.globalSetting.create({
-            data: {
-              lastToken: 1,
-              lastTokenDate: new Date(),
-            },
-          });
-        } else {
-          setting = await this.prisma.globalSetting.update({
-            where: { id: setting.id },
-            data: {
-              lastToken: 1,
-              lastTokenDate: new Date(),
-            },
-          });
-        }
+        setting = await this.prisma.globalSetting.upsert({
+          where: { id: setting?.id },
+          update: {
+            lastToken: 1,
+            lastTokenDate: new Date(),
+          },
+          create: {
+            lastToken: 1,
+            lastTokenDate: new Date(),
+          },
+        });
       } else {
+        // Increment token
         setting = await this.prisma.globalSetting.update({
           where: { id: setting.id },
           data: { lastToken: setting.lastToken + 1 },
         });
       }
 
-      // Add token and Visit to patient data
+      // Assign token number and prepare Visit data
       patientData.tokenNumber = setting.lastToken;
       patientData.Visit = {
         create: Visit.map((visit) => ({
@@ -79,11 +81,10 @@ export class FrontDeskService {
         })),
       };
     } else {
-      // No visits, no token generated
-      delete patientData.Visit;
+      delete patientData.Visit; // No visits, remove from data
     }
 
-    // Conditionally add relation if present and valid
+    // Handle relation information if provided
     if (
       relation &&
       relation.length > 0 &&
@@ -92,7 +93,7 @@ export class FrontDeskService {
       const firstRelation = relation[0];
 
       if (!firstRelation.relationName || !firstRelation.relationCNIC) {
-        throw new BadRequestException("Relation information is incomplete.");
+        throw new BadRequestException('Relation information is incomplete.');
       }
 
       patientData.relation = {
@@ -103,21 +104,36 @@ export class FrontDeskService {
         })),
       };
     } else {
-      // If relation is NONE or invalid, don't include the relation field
-      delete patientData.relation;
+      delete patientData.relation; // If relation is NONE or invalid, remove from data
     }
 
+    // Handle patient details if provided
+    if (details) {
+      patientData.details = {
+        create: {
+          // Assuming the details DTO contains properties to map to patient details
+          weight: details.weight,
+          sugarLevel: details.sugarLevel,
+          temperature: details.temperature,
+          height: details.height,
+          bloodPressure: details.bloodPressure,
+        },
+      };
+    } else {
+      delete patientData.details; // If no patient details are provided, remove from data
+    }
+
+    // Attempt to create the patient in the database
     try {
-      // Create the patient
       const patient = await this.prisma.patient.create({
         data: patientData,
       });
 
       return patient;
     } catch (error) {
-      console.error("Error creating patient:", error); // Log the full error for debugging
+      console.error('Error creating patient:', error);
       throw new BadRequestException(
-        error
+        'Error creating patient. Please try again later.',
       );
     }
   }
@@ -126,7 +142,7 @@ export class FrontDeskService {
     try {
       const doctors = await this.prisma.user.findMany({
         where: {
-          role: "doctor",
+          role: 'doctor',
         },
         select: {
           id: true,
@@ -136,16 +152,16 @@ export class FrontDeskService {
 
       return doctors.map((doctor) => ({
         id: doctor.id,
-        name: doctor.name || "",
+        name: doctor.name || '',
       }));
     } catch (error) {
-      console.error("Error fetching doctors:", error);
-      throw new Error("An error occurred while fetching doctors");
+      console.error('Error fetching doctors:', error);
+      throw new Error('An error occurred while fetching doctors');
     }
   }
 
   async searchPatients(
-    input: SearchRequestDto
+    input: SearchRequestDto,
   ): Promise<{ success: boolean; error?: string; data: any[] }> {
     try {
       const { cnic } = input;
@@ -173,7 +189,7 @@ export class FrontDeskService {
           relation: true,
           Visit: {
             orderBy: {
-              date: "desc",
+              date: 'desc',
             },
             take: 1,
           },
@@ -191,25 +207,26 @@ export class FrontDeskService {
         data: result,
       };
     } catch (error) {
-      console.error("Error searching for patients:", error);
+      console.error('Error searching for patients:', error);
       return {
         success: false,
-        error: "An error occurred while searching for patients.",
+        error: 'An error occurred while searching for patients.',
         data: [],
       };
     }
   }
 
   async searchVisit(
-    input: SearchRequestDto
+    input: SearchRequestDto,
   ): Promise<{ success: boolean; error?: string; data: any[] }> {
     try {
       const { cnic } = input;
 
       if (!cnic) {
-        throw new BadRequestException("CNIC is required for searching visits.");
+        throw new BadRequestException('CNIC is required for searching visits.');
       }
 
+      // Fetch patients by CNIC and related data
       const patients = await this.prisma.patient.findMany({
         where: {
           OR: [
@@ -233,21 +250,33 @@ export class FrontDeskService {
           relation: true,
           Visit: {
             orderBy: {
-              date: "desc",
+              date: 'desc',
             },
             take: 1,
           },
-          attendedByDoctor: true,
+          attendedByDoctor: {
+            select: {
+              name: true, // Fetching only the doctor's name
+            },
+          },
         },
       });
 
+      // If no patient found
       if (patients.length === 0) {
         return {
           success: false,
-          error: "No patients found with the provided CNIC.",
+          error: 'No patients found with the provided CNIC.',
           data: [],
         };
       }
+
+      // Fetch the latest token from GlobalSetting
+      const globalSetting = await this.prisma.globalSetting.findFirst({
+        orderBy: {
+          lastTokenDate: 'desc', // Get the most recent token setting
+        },
+      });
 
       return {
         success: true,
@@ -256,21 +285,27 @@ export class FrontDeskService {
           name: patient.name,
           fatherName: patient.fatherName,
           cnic: patient.cnic,
+          education: patient.education, // This needs to be fetched correctly
+          identity: patient.identity, // This needs to be fetched correctly
+          catchmentArea: patient.catchmentArea, // This needs to be fetched correctly
+          occupation: patient.occupation, // This needs to be fetched correctly
           relation: patient.relation,
           lastVisit: patient.Visit.length > 0 ? patient.Visit[0].date : null,
-          attendedByDoctor: patient.attendedByDoctor,
+          attendedByDoctorName: patient.attendedByDoctor?.name || null,
+          tokenNumber: patient.tokenNumber || null, // Patient's token number
+          lastToken: globalSetting?.lastToken || null, // Last token from GlobalSetting
         })),
       };
     } catch (error) {
-      console.error("Error getting visit by CNIC:", error);
+      console.error('Error getting visit by CNIC:', error);
       throw new BadRequestException(
-        "An error occurred while getting the visit by CNIC: " + error.message
+        'An error occurred while getting the visit by CNIC: ' + error.message,
       );
     }
   }
 
   async addVisit(
-    input: AddVisitRequestDto
+    input: AddVisitRequestDto,
   ): Promise<{ success: boolean; error?: string }> {
     const { patientId, Visit } = input;
 
@@ -280,7 +315,7 @@ export class FrontDeskService {
       });
 
       if (!patient) {
-        throw new NotFoundException("Patient not found.");
+        throw new NotFoundException('Patient not found.');
       }
 
       let tokenNumber = patient.tokenNumber;
@@ -334,7 +369,7 @@ export class FrontDeskService {
 
       return { success: true };
     } catch (error) {
-      console.error("Error adding visit:", error);
+      console.error('Error adding visit:', error);
 
       if (error instanceof NotFoundException) {
         throw error;
@@ -386,9 +421,9 @@ export class FrontDeskService {
         data: formattedVisits as unknown as VisitDto[],
       };
     } catch (error) {
-      console.error("Error getting visits:", error); // Log full error for better debugging
+      console.error('Error getting visits:', error); // Log full error for better debugging
       throw new BadRequestException(
-        error.message || "Something went wrong while fetching visits."
+        error.message || 'Something went wrong while fetching visits.',
       );
     }
   }
@@ -396,7 +431,7 @@ export class FrontDeskService {
   async getPatientById(id: string): Promise<GetPatientResponseDto> {
     // Remove or adjust the ID validation based on the actual format used in your database
     if (!id) {
-      throw new BadRequestException("Patient ID is required.");
+      throw new BadRequestException('Patient ID is required.');
     }
 
     try {
@@ -406,7 +441,7 @@ export class FrontDeskService {
           relation: true,
           Visit: {
             orderBy: {
-              date: "desc",
+              date: 'desc',
             },
             take: 1, // Get the most recent visit
           },
@@ -415,7 +450,7 @@ export class FrontDeskService {
       });
 
       if (!data) {
-        throw new NotFoundException("Patient not found.");
+        throw new NotFoundException('Patient not found.');
       }
 
       const lastVisitDate = data.Visit.length > 0 ? data.Visit[0].date : null;
@@ -428,22 +463,20 @@ export class FrontDeskService {
         },
       };
     } catch (error) {
-      console.error("Error getting patient:", error);
+      console.error('Error getting patient:', error);
       throw new BadRequestException(
-        "An error occurred while getting the patient."
+        'An error occurred while getting the patient.',
       );
     }
   }
 
   async updatePatient(id: string, updatePatientDto: UpdatePatientDto) {
-    console.log("Received update data:", updatePatientDto); // Add this to log incoming data
+    console.log('Received update data:', updatePatientDto); // Add this to log incoming data
 
     const { relation, ...rest } = updatePatientDto;
 
-
-
     const updateData: any = {
-      ...rest, 
+      ...rest,
     };
 
     if (
@@ -453,7 +486,7 @@ export class FrontDeskService {
     ) {
       const firstRelation = relation[0];
       if (!firstRelation.relationName || !firstRelation.relationCNIC) {
-        throw new BadRequestException("Relation information is incomplete.");
+        throw new BadRequestException('Relation information is incomplete.');
       }
 
       updateData.relation = {
@@ -470,13 +503,13 @@ export class FrontDeskService {
     try {
       const updatedPatient = await this.prisma.patient.update({
         where: { id },
-        data: updateData
+        data: updateData,
         // include: { relation: true }, // Include relations in the response
       });
       return updatedPatient;
     } catch (error) {
       throw new NotFoundException(
-        "Patient not found or the update is not applicable."
+        'Patient not found or the update is not applicable.',
       );
     }
   }
