@@ -252,15 +252,16 @@ export class FrontDeskService {
             orderBy: {
               date: 'desc',
             },
-            take: 1,
+            take: 1, // Get the latest visit
           },
           attendedByDoctor: {
             select: {
-              name: true, // Fetching only the doctor's name
+              name: true, // Fetching the doctor's name
             },
           },
         },
       });
+      
 
       // If no patient found
       if (patients.length === 0) {
@@ -285,14 +286,15 @@ export class FrontDeskService {
           name: patient.name,
           fatherName: patient.fatherName,
           cnic: patient.cnic,
-          education: patient.education, // This needs to be fetched correctly
-          identity: patient.identity, // This needs to be fetched correctly
-          catchmentArea: patient.catchmentArea, // This needs to be fetched correctly
-          occupation: patient.occupation, // This needs to be fetched correctly
+          education: patient.education,
+          identity: patient.identity,
+          catchmentArea: patient.catchmentArea,
+          occupation: patient.occupation,
           relation: patient.relation,
           lastVisit: patient.Visit.length > 0 ? patient.Visit[0].date : null,
           attendedByDoctorName: patient.attendedByDoctor?.name || null,
-          tokenNumber: patient.tokenNumber || null, // Patient's token number
+          tokenNumber: patient.tokenNumber || null,
+          amountPayed: patient.amountPayed || null, // Fetch directly from the Patient model
           lastToken: globalSetting?.lastToken || null, // Last token from GlobalSetting
         })),
       };
