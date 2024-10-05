@@ -15,16 +15,19 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
   name           String?
-  email          String   @unique
+  email          String  @unique
   password       String
-  role           String   @default("user")
+  role           String  @default("user")
   specialization String?
-  license        String?
-  age            String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         String  @default("Not Active")
+  image          String?
+  qualification  String?
+  license   String?
+  age       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   patients Patient[] @relation("DoctorPatients")
 }
@@ -54,24 +57,23 @@ model Patient {
   relation           Relation[]
 
   // Optional relation to PatientDetails
-  details            PatientDetails? @relation("PatientDetailsRelation")
+  details PatientDetails? @relation("PatientDetailsRelation")
 
-  attendedByDoctor   User            @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
+  attendedByDoctor User @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
 }
 
 model PatientDetails {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  patientId     String   @unique @db.ObjectId // Unique to maintain a one-to-one relationship
-  weight         Float?
-  sugarLevel     Float?
-  temperature    Float?
-  height         Float?
-  bloodPressure   String?
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  patientId     String  @unique @db.ObjectId // Unique to maintain a one-to-one relationship
+  weight        Float?
+  sugarLevel    Float?
+  temperature   Float?
+  height        Float?
+  bloodPressure String?
 
   // Relation to Patient with fields and references
-  patient       Patient  @relation("PatientDetailsRelation", fields: [patientId], references: [id])
+  patient Patient @relation("PatientDetailsRelation", fields: [patientId], references: [id])
 }
-
 
 model GlobalSetting {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
