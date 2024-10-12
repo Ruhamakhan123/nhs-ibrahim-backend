@@ -14,37 +14,37 @@ import { GetPatientResponseDto } from './dto/get-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 import { Relationship } from '@prisma/client';
 import { identity } from 'rxjs';
+
 @Injectable()
 export class FrontDeskService {
   constructor(private prisma: PrismaService) {}
 
   async addPatient(createPatientDto: CreatePatientDto): Promise<Patient> {
-    const {
-      attendedByDoctorId,
-      cnic,
-      relation,
-      Visit,
-      details, // Add details to destructured DTO
-    } = createPatientDto;
+    const { attendedByDoctorId, relation, Visit, details, ...otherFields } =
+      createPatientDto;
 
-    // Check for existing patient with the same CNIC
-    if (cnic) {
-      const existingPatient = await this.prisma.patient.findFirst({
-        where: { cnic },
-      });
-
-      if (existingPatient) {
-        throw new BadRequestException(
-          'A patient with the same CNIC already exists.',
-        );
-      }
-    }
-
-    // Prepare patient data
     const patientData: any = {
-      ...createPatientDto,
-      attendedByDoctorId,
+      ...otherFields,
+      ...(attendedByDoctorId ? { attendedByDoctorId } : {}),
     };
+
+    // Handle relation information if provided and not 'NONE'
+    if (relation && relation.length > 0 && relation[0].relation !== 'NONE') {
+      const firstRelation = relation[0];
+
+      if (!firstRelation.relationName || !firstRelation.relationCNIC) {
+        throw new BadRequestException('Relation information is incomplete.');
+      }
+
+      // Create relation data without patientId, Prisma will automatically link it
+      patientData.relation = {
+        create: relation.map((r) => ({
+          relation: r.relation,
+          relationName: r.relationName,
+          relationCNIC: r.relationCNIC,
+        })),
+      };
+    }
 
     // Handle Visit and token generation if Visits are provided
     if (Visit && Array.isArray(Visit) && Visit.length > 0) {
@@ -54,7 +54,7 @@ export class FrontDeskService {
       // Check if token needs to be reset
       if (!setting || setting.lastTokenDate.setHours(0, 0, 0, 0) < today) {
         setting = await this.prisma.globalSetting.upsert({
-          where: { id: setting?.id },
+          where: { id: setting?.id || '' },
           update: {
             lastToken: 1,
             lastTokenDate: new Date(),
@@ -84,34 +84,10 @@ export class FrontDeskService {
       delete patientData.Visit; // No visits, remove from data
     }
 
-    // Handle relation information if provided
-    if (
-      relation &&
-      relation.length > 0 &&
-      relation[0].relation !== Relationship.NONE
-    ) {
-      const firstRelation = relation[0];
-
-      if (!firstRelation.relationName || !firstRelation.relationCNIC) {
-        throw new BadRequestException('Relation information is incomplete.');
-      }
-
-      patientData.relation = {
-        create: relation.map((r) => ({
-          relation: r.relation,
-          relationName: r.relationName,
-          relationCNIC: r.relationCNIC,
-        })),
-      };
-    } else {
-      delete patientData.relation; // If relation is NONE or invalid, remove from data
-    }
-
     // Handle patient details if provided
     if (details) {
       patientData.details = {
         create: {
-          // Assuming the details DTO contains properties to map to patient details
           weight: details.weight,
           sugarLevel: details.sugarLevel,
           temperature: details.temperature,
@@ -125,15 +101,21 @@ export class FrontDeskService {
 
     // Attempt to create the patient in the database
     try {
+      // Log patientData to verify that relation data is included
+      console.log('Creating patient with data:', patientData);
+
       const patient = await this.prisma.patient.create({
         data: patientData,
+        include: {
+          relation: true, // Include relation in the response to verify creation
+        },
       });
 
       return patient;
     } catch (error) {
       console.error('Error creating patient:', error);
       throw new BadRequestException(
-        'Error creating patient. Please try again later.',
+        error.message || 'Error creating patient. Please try again later.',
       );
     }
   }
@@ -261,7 +243,6 @@ export class FrontDeskService {
           },
         },
       });
-      
 
       // If no patient found
       if (patients.length === 0) {
@@ -381,9 +362,43 @@ export class FrontDeskService {
     }
   }
 
-  async getVisits(): Promise<GetVisitsResponseDto> {
+  async getVisits(dateString?: string): Promise<GetVisitsResponseDto> {
     try {
+      // If dateString is provided, parse it; otherwise, use the current date
+      let date = new Date();
+      if (dateString) {
+        date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date format.');
+        }
+      }
+
+      // Set the start and end of the day in local time
+      const startOfDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        0,
+        0,
+        0,
+      );
+      const endOfDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        23,
+        59,
+        59,
+      );
+
+      // Fetch visits for the specified date in local time
       const visits = await this.prisma.visit.findMany({
+        where: {
+          date: {
+            gte: startOfDay,
+            lte: endOfDay, // Use 'lte' for inclusive comparison up to the end of the day
+          },
+        },
         include: {
           patient: {
             include: {
@@ -394,6 +409,7 @@ export class FrontDeskService {
         },
       });
 
+      // Map visits to the DTO format
       const formattedVisits = visits.map((visit) => ({
         visitedAt: visit.date,
         patient: {
@@ -420,10 +436,10 @@ export class FrontDeskService {
 
       return {
         success: true,
-        data: formattedVisits as unknown as VisitDto[],
+        data: formattedVisits,
       };
     } catch (error) {
-      console.error('Error getting visits:', error); // Log full error for better debugging
+      console.error('Error getting visits:', error);
       throw new BadRequestException(
         error.message || 'Something went wrong while fetching visits.',
       );

@@ -15,9 +15,9 @@ import { VisitDto } from './visit.dto';
 import { PatientDetailsDto } from '../../nurse/dto/patient-details.dto'; // Import the new DTO
 
 export class CreatePatientDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  attendedByDoctorId: string;
+  attendedByDoctorId?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -74,9 +74,9 @@ export class CreatePatientDto {
   @IsEnum(CatchmentArea)
   catchmentArea: CatchmentArea;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  amountPayed: string;
+  amountPayed?: string;
 
   @IsOptional()
   @IsArray()
@@ -84,11 +84,11 @@ export class CreatePatientDto {
   @Type(() => RelationDto)
   relation: RelationDto[];
 
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PatientDetailsDto)
+  details?: PatientDetailsDto;
+
   @IsOptional() // Allow Visit to be optional
   Visit?: VisitDto[];
-
-  @IsOptional()
-  @ValidateNested() // Validate nested PatientDetailsDto
-  @Type(() => PatientDetailsDto)
-  details?: PatientDetailsDto; // Reference to the new PatientDetailsDto
 }

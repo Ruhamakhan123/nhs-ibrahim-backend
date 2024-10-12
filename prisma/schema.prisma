@@ -32,9 +32,9 @@ model User {
   patients Patient[] @relation("DoctorPatients")
 }
 
-model Patient {
+  model Patient {
   id                 String        @id @default(auto()) @map("_id") @db.ObjectId
-  attendedByDoctorId String        @db.ObjectId
+  attendedByDoctorId String?       @db.ObjectId  // Make this field nullable
   name               String
   fatherName         String
   email              String
@@ -53,14 +53,15 @@ model Patient {
   catchmentArea      CatchmentArea
   Visit              Visit[]
   tokenNumber        Int?
-  amountPayed        String
+  amountPayed        String?
   relation           Relation[]
 
   // Optional relation to PatientDetails
   details PatientDetails? @relation("PatientDetailsRelation")
 
-  attendedByDoctor User @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
+  attendedByDoctor User? @relation("DoctorPatients", fields: [attendedByDoctorId], references: [id])
 }
+
 
 model PatientDetails {
   id            String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -102,8 +103,10 @@ enum Relationship {
   PARENT
   SIBLING
   CHILD
+  SPOUSE
   NONE
 }
+
 
 enum Identity {
   PAKISTANI

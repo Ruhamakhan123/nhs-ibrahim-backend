@@ -1,4 +1,4 @@
-import { CatchmentArea, CRC, Identity } from "@prisma/client";
+import { CatchmentArea, CRC, Identity } from '@prisma/client';
 
 export class DoctorDto {
   id: string;
@@ -30,9 +30,8 @@ export class PatientDto {
   contactNumber: string;
   attendedByDoctor: DoctorDto;
   relation: RelationDto[];
-  lastVisit: Date | null;
+  lastVisit?: Date | null;
 }
-
 
 export class VisitDto {
   visitedAt: Date;
