@@ -22,14 +22,25 @@ export class UserService {
           email: createUserDto.email,
           password: hashedPassword,
           role: createUserDto.role,
+          qualification: createUserDto.qualification,
           specialization: createUserDto.specialization,
           license: createUserDto.license,
           age: createUserDto.age,
+          image: createUserDto.image,
         },
       });
       return user;
     } catch (error) {
-      throw new HttpException('Failed to create user', HttpStatus.BAD_REQUEST);
+      if (error.code === 'P2002') {
+        // Handle Prisma unique constraint error
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      } else {
+        // Generic error handling
+        throw new HttpException(
+          'Failed to create user',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
     }
   }
 
