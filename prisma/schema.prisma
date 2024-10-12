@@ -72,9 +72,19 @@ model PatientDetails {
   height        Float?
   bloodPressure String?
 
-  // Relation to Patient with fields and references
+  // Optional fields
+  injection     String?
+  timeOfInjection String?
+  bedNumber     String?
+  medicine      String?
+  timeOfMedicine String?
+  drip          String?
+  expiryOfDrip  DateTime?
+
+  // Relation to Patient
   patient Patient @relation("PatientDetailsRelation", fields: [patientId], references: [id])
 }
+
 
 model GlobalSetting {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId

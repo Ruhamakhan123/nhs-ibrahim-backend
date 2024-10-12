@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, UseGuards, Get, Query } from '@nestjs/common';
 import { NurseService } from './nurse.service';
 import { PatientDetailsDto } from './dto/patient-details.dto'; // DTO for patient details
 import { Patient, PatientDetails } from '@prisma/client';
@@ -7,6 +7,7 @@ import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/decorators/roles/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
+import { SearchRequestDto } from 'src/frontdesk/dto/search.dto';
 @Controller('nurse')
 export class NurseController {
   constructor(
@@ -25,6 +26,17 @@ export class NurseController {
       patientId,
       createPatientDetailsDto,
     );
+  
+  
+  }
+
+  @Get('details')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FrontDesk, Role.Nurse)
+  async searchPatients(
+    @Query() input: SearchRequestDto,
+  ): Promise<{ success: boolean; error?: string; data: any[] }> {
+    return this.nurseService.searchPatients(input);
   }
 }
 
