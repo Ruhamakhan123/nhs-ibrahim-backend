@@ -18,8 +18,7 @@ export class CreateUserDto {
   @IsString()
   specialization: string;
 
-  @IsString()
-  image: string
+  
 
   @IsOptional()
   @IsString()

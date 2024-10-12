@@ -21,7 +21,6 @@ export class UserService {
           name: createUserDto.name,
           email: createUserDto.email,
           password: hashedPassword,
-          image: createUserDto.image,
           role: createUserDto.role,
           qualification: createUserDto.qualification,
           specialization: createUserDto.specialization,
